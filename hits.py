@@ -11,9 +11,9 @@ from stemming import porter2
 TEST_DOCS = [
     {
         "id":1,
-        "citations":  [],
-        "references": [],
-        "keywords": []
+        "citations":  [5],
+        "references": [3, 2],
+        "keywords": ["asdf"]
     },
     {
         "id":2,
@@ -28,9 +28,9 @@ TEST_DOCS = [
         "keywords": []
     },
     {
-        "id":4,
-        "citations":  [],
-        "references": [],
+        "id":5,
+        "citations":  [2],
+        "references": [3],
         "keywords": []
     }
     ]
@@ -61,29 +61,33 @@ class HITS(object):
 
     #run HITS over an iterator of dicts
     def run_hits(self, G, k = 20):
+        #G is a set of docids
         for p in G:
-          p['auth'] = 1  #p['auth'] is the authority score of the page p
-          p['hub'] = 1 #p['hub'] is the hub score of the page p
+          self.docs[p]['auth'] = 1  #self.docs[p]['auth'] is the authority score of the page p
+          self.docs[p]['hub'] = 1 #self.docs[p]['hub'] is the hub score of the page p
+          
+        print self.docs
            
         for step in range(0, k):  #run the algorithm for k steps
-          norm = 0
+          norm = 0.0
           for p in G:  #update all authority values first
-            p['auth'] = 0
-            for q in p['citations']:  #p.citations is the set of pages that link to p
-               p['auth'] += G[q]['hub']
-            norm += math.pow(p['auth'], 2) #calculate the sum of the squared auth values to normalize
+            self.docs[p]['auth'] = sum(self.docs[q]['hub'] for q in self.docs[p]['citations'])
+            norm += math.pow(self.docs[p]['auth'], 2) #calculate the sum of the squared auth values to normalize
           norm = math.sqrt(norm)
-          for p in G:  #update the auth scores 
-            p['auth'] = p['auth'] / norm  #normalise the auth values
-          norm = 0
+          
+          for p in G:  #update the auth scores
+            self.docs[p]['auth'] = self.docs[p]['auth'] / norm  #normalize the auth values
+            print self.docs[p]
+          
+          norm = 0.0
           for p in G:  #then update all hub values
-            p['hub'] = 0
-            for r in p['references']: #p.references is the set of pages that p links to
-              p['hub'] += G[r]['auth']
-              norm += math.pow(p['hub'], 2) #calculate the sum of the squared hub values to normalize
+            self.docs[p]['hub'] = sum(self.docs[r]['auth'] for r in self.docs[p]['references'])
+            norm += math.pow(self.docs[p]['hub'], 2) #calculate the sum of the squared hub values to normalize
           norm = math.sqrt(norm)
+
           for p in G:  #then update all hub values
-            p['hub'] = p['hub'] / norm   #normalize the hub values
+            self.docs[p]['hub'] = self.docs[p]['hub'] / norm   #normalize the hub values
+            print self.docs[p]
             
             
     def index_docs(self, docs):
@@ -118,11 +122,9 @@ def main():
       #doc_lda = lda[query]
       
       tokens = tokenize([query])
-      print tokens
       id_sets = [hits_obj.index[token] for token in tokens]
       if not id_sets or not all(id_sets):
           print []
-          print "wtf"
       ids = reduce(operator.__and__,id_sets)
       
       matching_docs = [hits_obj.docs[id] for id in ids] #this is the root set
@@ -132,10 +134,8 @@ def main():
       for doc in matching_docs:
         #calculate the base set
         base_set.add(doc['id']) #add the doc id to base_set
-        base_set.union(set(doc['citations'])) #add the citations to base_set
-        base_set.union(set(doc['references']))  #add the references to base_set
-      
-      #FIXME use base_set ids to pull the corresponding docs
+        base_set = base_set.union(set(doc['citations'])) #add the citations to base_set
+        base_set = base_set.union(set(doc['references']))  #add the references to base_set
       
       hits_obj.run_hits(base_set, 5)
       print hits_obj.docs
