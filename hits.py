@@ -18,13 +18,13 @@ TEST_DOCS = [
     {
         "id":2,
         "citations":  [],
-        "references": [],
+        "references": [1, 5],
         "keywords": []
     },
     {
         "id":3,
-        "citations":  [],
-        "references": [],
+        "citations":  [5],
+        "references": [1],
         "keywords": []
     },
     {
@@ -71,23 +71,22 @@ class HITS(object):
         for step in range(0, k):  #run the algorithm for k steps
           norm = 0.0
           for p in G:  #update all authority values first
+            self.docs[p]['oldauth'] = self.docs[p]['auth']
             self.docs[p]['auth'] = sum(self.docs[q]['hub'] for q in self.docs[p]['citations'])
             norm += math.pow(self.docs[p]['auth'], 2) #calculate the sum of the squared auth values to normalize
           norm = math.sqrt(norm)
           
           for p in G:  #update the auth scores
             self.docs[p]['auth'] = self.docs[p]['auth'] / norm  #normalize the auth values
-            print self.docs[p]
           
           norm = 0.0
           for p in G:  #then update all hub values
-            self.docs[p]['hub'] = sum(self.docs[r]['auth'] for r in self.docs[p]['references'])
+            self.docs[p]['hub'] = sum(self.docs[r]['oldauth'] for r in self.docs[p]['references'])
             norm += math.pow(self.docs[p]['hub'], 2) #calculate the sum of the squared hub values to normalize
           norm = math.sqrt(norm)
 
           for p in G:  #then update all hub values
             self.docs[p]['hub'] = self.docs[p]['hub'] / norm   #normalize the hub values
-            print self.docs[p]
             
             
     def index_docs(self, docs):
@@ -138,7 +137,8 @@ def main():
         base_set = base_set.union(set(doc['references']))  #add the references to base_set
       
       hits_obj.run_hits(base_set, 5)
-      print hits_obj.docs
+      for doc in hits_obj.docs:
+        print(doc, hits_obj.docs[doc]['auth'], hits_obj.docs[doc]['hub'])
 
 if __name__=="__main__":
     main()
