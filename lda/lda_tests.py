@@ -15,13 +15,14 @@ rec_titles_and_abstracts = [("UTA-Rec: a recommender system based on multiple cr
 
 topics_titles_and_abstracts = [("Unsupervised topic modelling for multi-party spoken discourse","We present a method for unsupervised topic modelling which adapts methods used in document classification (Blei et al., 2003; Griffiths and Steyvers, 2004) to unsegmented multi-party discourse transcripts. We show how Bayesian inference in this generative model can be used to simultaneously address the problems of topic segmentation and topic identification: automatically segmenting multi-party meetings into topically coherent segments with performance which compares well with previous unsupervised segmentation-only methods (Galley et al., 2003) while simultaneously extracting topics which rate highly when assessed for coherence by human judges. We also show that this method appears robust in the face of off-topic dialogue and speech recognition errors."), ("Video topic modelling with behavioural segmentation", "Topic models such as Latent Dirichlet Allocation (LDA) are used extensively for modelling multi-object behaviour and anomaly detection in busy scenes. However, existing topic models suffer from the sensitivity problem, where they are unable to detect anomalies that are mixed in with large numbers of co-occurring normal behaviours. Also at issue is the localisation problem, where anomalies are detected but not localised within a given video clip. To address these two problems this paper proposes a novel region LDA model, which encodes the spatial awareness that is ignored by conventional topic models. Both scene decomposition and behavioural modelling are simultaneously performed. Consequentially, abnormality is detected per-region rather than for the entire scene, resolving both the sensitivity and localisation issues. Experiments conducted on busy real world scenes demonstrate the superiority of the proposed model."),("    A multi-collection latent topic model for federated search","Collection selection is a crucial function, central to the effectiveness and efficiency of a federated information retrieval system. A variety of solutions have been proposed for collection selection adapting proven techniques used in centralised retrieval. This paper defines a new approach to collection selection that models the topical distribution in each collection. We describe an extended version of latent Dirichlet allocation that uses a hierarchical hyperprior to enable the different topical distributions found in each collection to be modelled. Under the model, resources are ranked based on the topical relationship between query and collection. By modelling collections in a low dimensional topic space, we can implicitly smooth their term-based characterisation with appropriate terms from topically related samples, thereby dealing with the problem of missing vocabulary within the samples. An important advantage of adopting this hierarchical model over current approaches is that the model generalises well to unseen documents given small samples of each collection. The latent structure of each collection can therefore be estimated well despite imperfect information for each collection such as sampled documents obtained through query-based sampling. Experiments demonstrate that this new, fully integrated topical model is more robust than current state of the art collection selection algorithms."),("Towards Semantic Wikis: Modelling Intensions, Topics, and Origin in Content Management Systems","Content management is the process of handling information within an organization or community. Therefore, content management systems have to provide generic functionality for generation, extraction, storage, and exchange of digital assets. Because of the heterogeneity and complexity of content, a sufficient semantical and user-oriented annotation of content is crucial. Although semantical annotation by metadata and ontologies together with reasoning support has been extensively studied for a long time, commercially available content management systems provide only basic support for semantic modelling. Conceptual aspects of content users and support of user specific intensions are neglected. In this paper we will analyze the mismatch between the requirements of content management and semantical description and propose a data model for content which treats semantic information not only as describing metadata but incorporates the data itself, the intension behind the data, the usage of data and the origin of data on the same level.")]
 
+def create_doc(title, abstract, references, citations):
+    return {'id' : 13, 'title':title, 'abstract':abstract, 'references':references,'citations':citations}
+
 def create_docs_for_ta(title_abstract_list):
     for t_a in title_abstract_list:
         title, abstract = t_a
-        yield create_test_doc(title, abstract, [], [])
+        yield create_doc(title, abstract, [], [])
 
-def create_doc(title, abstract, references, citations):
-    return {'id' : 13, 'title':title, 'abstract':abstract, 'references':references,'citations':citations}
 
 class TestLDA(unittest.TestCase):
     def setUp(self):
@@ -68,8 +69,18 @@ class TestLDA(unittest.TestCase):
         self.assertEqual(nothing_result['document'], "")
 
 
+    def test_lda(self):
+        corpora = self.lda.create_corpora(create_docs_for_ta(rec_titles_and_abstracts+topics_titles_and_abstracts), self.lda.map_to_abst)
 
+        #Our "bag of words" for the entire corpora
+        # should have more than 500 words from the 9 docs
+        lerm = self.lda.lda_transform(corpora)
 
+        #The model itself is hard to model; nosetests has been capturing the stdoutput, but it does in fact create topic models.
+        #they;re nit the best b/c a small corpus, but it works!
+
+#and this makes sure we get an expected number of keys in the vocabulary, even given stopwords.
+        self.assertTrue(corpora.dictionary.keys()> 500)
 
 
 
