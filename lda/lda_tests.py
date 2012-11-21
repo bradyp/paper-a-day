@@ -29,14 +29,52 @@ class TestLDA(unittest.TestCase):
         self.lda = lda.TopicModeller()
 
     def test_concats_ref_and_cite_correctly(self):
-        normal_doc = create_doc("test","document",['a', 'b', 'c'], ['d'])
+        normal_doc = create_doc("test","document",['adoc', 'b', 'c'], ['d'])
         result = self.lda.map_to_citation(normal_doc)
 
         self.assertEqual(result['id'], 13)
-        self.assertEqual(result['document'], "a b c d")
+        self.assertEqual(result['document'], "adoc b c d")
 
         sad_doc  = create_doc("feel", "that sadness", [] ,  [])
         sad_result = self.lda.map_to_citation(sad_doc)
 
         self.assertEqual(sad_result['id'], 13)
         self.assertEqual(sad_result['document'], "")
+
+    def test_concats_title_abst_correctly(self):
+        normal_doc = create_doc("abst", "title", [], [])
+        result = self.lda.map_to_abst(normal_doc)
+
+        self.assertEqual(result['id'], 13)
+        self.assertEqual(result['document'], "abst title")
+
+        title_only = create_doc("title", "", [], [])
+        title_result = self.lda.map_to_abst(title_only)
+
+        self.assertEqual(title_result['id'], 13)
+        self.assertEqual(title_result['document'], "title")
+
+
+        abstract_only= create_doc("", "abstract", [], [])
+        abstract_result= self.lda.map_to_abst(abstract_only)
+
+        self.assertEqual(abstract_result['id'], 13)
+        self.assertEqual(abstract_result['document'], "abstract")
+
+        nothing_lol= create_doc("", "", [], [])
+        nothing_result= self.lda.map_to_abst(nothing_lol)
+
+        self.assertEqual(nothing_result['id'], 13)
+        self.assertEqual(nothing_result['document'], "")
+
+
+
+
+
+
+
+
+
+
+
+

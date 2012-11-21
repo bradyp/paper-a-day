@@ -6,10 +6,16 @@
 
 import string
 
+# responsible for modelling topics.
+# Code name it milan for a fashion reference
 class TopicModeller(object):
     def __init__(self):
         self.eyedee =2
 
+
+    # these are some cutesy methods to abstract away
+    # the dictionary references for when I need to change them
+    # :D
     def _citations(self, doc):
         return doc['citations']
 
@@ -34,8 +40,6 @@ class TopicModeller(object):
         ref_and_cite = self._references(document) + self._citations(document)
         print document
         eyedee = self._eyedee(document)
-
-
 
         citation_texts = ' '.join(map(str,ref_and_cite))
         return {'id':eyedee, 'document':string.strip(citation_texts)}
