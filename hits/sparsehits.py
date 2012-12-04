@@ -11,36 +11,37 @@ from scipy import sparse
 
 from stemming import porter2
 
+
 TEST_DOCS = [
     {
         "id":1,
         "citations":  [5],
         "references": [3, 2],
-        "keywords": ["asdf"]
+        "keywords": ["asdf", "arbitrary", "latent direchlet"]
     },
     {
         "id":2,
-        "citations":  [],
-        "references": [1, 5],
-        "keywords": []
+        "citations":  [1, 5, 3],
+        "references": [],
+        "keywords": ["lda", "topic modelling", "most authoritative"]
     },
     {
         "id":3,
-        "citations":  [5],
-        "references": [1],
-        "keywords": []
+        "citations":  [5, 1],
+        "references": [2],
+        "keywords": [""]
     },
     {
         "id":5,
-        "citations":  [2],
-        "references": [3],
-        "keywords": []
+        "citations":  [],
+        "references": [3, 2, 1],
+        "keywords": ["pagerank", "the least authoritative"]
     },
     {
         "id":314159,
-        "citations":  [],
-        "references": [],
-        "keywords": []
+        "citations":  [57721],
+        "references": [271828],
+        "keywords": ["xyzzy"]
     }
     ]
 
@@ -67,11 +68,14 @@ class HITS(object):
     def __init__(self):
       self.index = collections.defaultdict(set)
       self.docs = {}
+      self.done = False
       
     def _adjacencies(self):
         adjacencies = collections.defaultdict(set)
-        for doc in self.docs:
+        for doc in self.seeds:
             for refid in self.docs[doc]['references']:  #"who does this reference?"
+                if refid not in self.docs:
+                  continue
                 to = refid
                 frm = doc
                 # avoid self-references (of same paper)
@@ -80,6 +84,8 @@ class HITS(object):
                 # make sure that everyone who is mentioned is in the dict
                 adjacencies[to]
             for citid in self.docs[doc]['citations']:   #"who cites this?"
+                if citid not in self.docs:
+                  continue
                 to = doc
                 frm = citid
                 # avoid self-citations (of same paper)
@@ -105,31 +111,31 @@ class HITS(object):
         return sparse.csc_matrix(trans_prob)
 
     #run HITS over an iterator of dicts
-    def run_hits(self, G, k = 20):
+    def run_hits(self, base):
     
-        self.setup_hits()
+        self.seeds = base
+        if not self.setup_hits():
+          #if all scores are 0, add that to the doc
+          for doc in self.seeds:
+            self.docs[doc]['auth'] = 0
+          return
         
         while(not self._has_converged()):
             self._hits_iteration()
         
-        #store the authority values
-        for i in range(len(adjacencies)):
-            print i
-    
-        #G is a set of docids
-#        for p in G:
- #         self.docs[p]['auth'] = 1  #self.docs[p]['auth'] is the authority score of the page p
-  #        self.docs[p]['hub'] = 1 #self.docs[p]['hub'] is the hub score of the page p
-
-#        for step in range(0, k):  #run the algorithm for k steps
- #         for p in G:  #update all authority values first
-  #          self.docs[p]['auth'] = sum(self.docs[q]['hub'] for q in self.docs[p]['citations'])
-
-#          for p in G:  #then update all hub values
- #           self.docs[p]['hub'] = sum(self.docs[r]['oldauth'] for r in self.docs[p]['references'])
-
+        #store the authority values into the docs themselves
+        sparse_indices = self.auth_vect.nonzero()[0]
+        
+        for uid in self.uid_index:
+          if self.uid_index[uid] in sparse_indices:
+            self.docs[uid]['auth'] = self.auth_vect[self.uid_index[uid]].todense()
+          else:
+            self.docs[uid]['auth'] = 0
+        
     def setup_hits(self):
         adjacencies = self._adjacencies()
+        if adjacencies == {}:
+          return False
         uids = adjacencies.keys()
         self.uid_index = {uid:i for i,uid in enumerate(uids)}
     
@@ -139,21 +145,26 @@ class HITS(object):
         adj_size = len(self._adjacencies())
         self.hub_vect = sparse.csc_matrix(np.ones(adj_size)).transpose()
         self.auth_vect = sparse.csc_matrix(np.ones(adj_size)).transpose()
-        print self.hub_vect
         
     def _hits_iteration(self):
-        old_auth = self.auth_vect
-        old_hubs = self.hub_vect
+        old_auth = self.auth_vect.copy()
+        old_hubs = self.hub_vect.copy()
         self.auth_vect = self.citeref_mat.transpose() * self.hub_vect
         self.hub_vect = self.citeref_mat * self.auth_vect
         
-        print self.auth_vect
-        print self.hub_vect
-        self.delta = np.sum(np.array(old_auth-self.auth_vect+old_hubs-self.hub_vect))
+        self.auth_vect = self.auth_vect / math.sqrt(self.auth_vect.multiply(self.auth_vect).sum())
+        self.hub_vect = self.hub_vect / math.sqrt(self.hub_vect.multiply(self.hub_vect).sum())
         
+        auth_diff = old_auth - self.auth_vect
+        hubs_diff = old_hubs - self.hub_vect
+        auth_delta = auth_diff.multiply(auth_diff).sum()
+        hubs_delta = hubs_diff.multiply(hubs_diff).sum()
+        
+        if auth_delta < 1e-6 and hubs_delta < 1e-6:  #we converged!
+          self.done = True
 
     def _has_converged(self):
-        return self.delta < 1e-6
+        return self.done
 
 
     def index_docs(self, docs):
@@ -175,13 +186,19 @@ def get_docs(useDefault = True):    ##pulling from test corpus for now
         return TEST_DOCS
 
 def main():
-    #snag the docs from whereever
+    #FIXME snag the docs from whereever
     docs = get_docs()
+    print docs
 
     hits_obj = HITS()
 
-    #make a set of all the stemmed keywords (tokens, more or less)
+    #index all the docs
     hits_obj.index_docs(docs)
+    
+    #FIXME run lda on the docs
+
+    #FIXME NOW READY FOR QUERIES
+
 
     #read queries
     query = get_query()
@@ -190,6 +207,9 @@ def main():
 
     tokens = tokenize([query])
     id_sets = [hits_obj.index[token] for token in tokens]
+
+    #FIXME change id_sets to be all docs that match the topic
+
     if not id_sets or not all(id_sets):
       print "No matches found"
       return
@@ -205,7 +225,11 @@ def main():
       base_set = base_set.union(set(doc['citations'])) #add the citations to base_set
       base_set = base_set.union(set(doc['references']))  #add the references to base_set
 
-    hits_obj.run_hits(base_set, 5)
+    #remove the referenced/citing docs that aren't actually in our collection
+    all_ids = [x['id'] for x in docs]
+    base_set = base_set.intersection(all_ids)
+
+    hits_obj.run_hits(base_set)
     ranked_docs = [hits_obj.docs[doc] for doc in hits_obj.docs if doc in base_set]
     ranked_docs = sorted(ranked_docs, key=operator.itemgetter('auth'), reverse=True)
     print ranked_docs
