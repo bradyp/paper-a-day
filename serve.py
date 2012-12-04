@@ -115,8 +115,10 @@ if __name__=="__main__":
     #FIXME snag the docs from whereever
     server = couchdb.client.Server(url='https://vertex.skizzerz.net:6984/')
     db = server['papers']
-    docs = db.view('all/all')
-    print len(docs)
+    result = db.view('all/all')
+    docs = []
+    for row in result:
+        docs.append(row.value)
 
     _hits_obj = hits.sparseHITS()
 
