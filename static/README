@@ -1,0 +1,4 @@
+This is a simple web application created using Initializr, Bootstrap, Jquery, and Underscore.js.
+
+The only html page is static/index.html . All of the javascript that is unique
+to this application is in static/js/script.js .

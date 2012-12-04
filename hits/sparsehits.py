@@ -5,46 +5,11 @@ import math
 import operator
 import gensim
 import re
+import couchdb
+#import Couch
 
 import numpy as np
 from scipy import sparse
-
-from stemming import porter2
-
-
-TEST_DOCS = [
-    {
-        "id":1,
-        "citations":  [5],
-        "references": [3, 2],
-        "keywords": ["asdf", "arbitrary", "latent direchlet"]
-    },
-    {
-        "id":2,
-        "citations":  [1, 5, 3],
-        "references": [],
-        "keywords": ["lda", "topic modelling", "most authoritative"]
-    },
-    {
-        "id":3,
-        "citations":  [5, 1],
-        "references": [2],
-        "keywords": [""]
-    },
-    {
-        "id":5,
-        "citations":  [],
-        "references": [3, 2, 1],
-        "keywords": ["pagerank", "the least authoritative"]
-    },
-    {
-        "id":314159,
-        "citations":  [57721],
-        "references": [271828],
-        "keywords": ["xyzzy"]
-    }
-    ]
-
 
 from stemming import porter2
 
@@ -63,7 +28,7 @@ def tokenize(text):
       tokens = tokens + re.findall("[\w']+", entry.lower())
     return [porter2.stem(token) for token in tokens]
 
-class HITS(object):
+class sparseHITS(object):
 
     def __init__(self):
       self.index = collections.defaultdict(set)
