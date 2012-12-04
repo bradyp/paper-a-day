@@ -120,7 +120,10 @@ def get_query(fromCL = True):    ##allowing for possible changes to this later
 
 def get_docs(useDefault = True):    ##pulling from test corpus for now
     if useDefault:
-        return TEST_DOCS
+        server = couchdb.client.Server(url='https://vertex.skizzerz.net:6984/')
+        db = server['papers']
+        return db.view('all/all')
+    return TEST_DOCS
 
 def main():
     #snag the docs from whereever

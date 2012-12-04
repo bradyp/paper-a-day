@@ -6,6 +6,7 @@ import time
 
 import bottle
 import hits.sparsehits as hits
+import couchdb
 
 _hits_obj = None
 
@@ -112,8 +113,10 @@ TEST_DOCS = [
 
 if __name__=="__main__":
     #FIXME snag the docs from whereever
-    docs = TEST_DOCS
-    print docs
+    server = couchdb.client.Server(url='https://vertex.skizzerz.net:6984/')
+    db = server['papers']
+    docs = db.view('all/all')
+    print len(docs)
 
     _hits_obj = hits.sparseHITS()
 
