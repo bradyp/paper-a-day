@@ -6,7 +6,7 @@ var tweet_template = _.template($('#tweet_template').html(),null,{variable:'t'})
 var result_template = _.template($('#result_template').html());
 var alert_template = _.template($('#alert_template').html());
 
-$('#tweetsearch form').submit(function(ev) {
+$('#sparsehits form').submit(function(ev) {
     var q = $(this).find('input[name=query]').val();
     var n = $(this).find('input[name=count]').val();
     ajax_search(q, n);
@@ -16,10 +16,10 @@ $('#tweetsearch form').submit(function(ev) {
 
 function ajax_search(q, n) {
   $.ajax('/search',{
-      data:{q:q, n:n},
+      data:{query:q, count:n},
       timeout:15000,
       success: function(data) {
-        var result_div = $('#tweetsearch .results');
+        var result_div = $('#sparsehits .results');
         result_div.empty();
         result_div.show();
         result_div.append($(result_template(data)));
@@ -38,8 +38,8 @@ function ajax_search(q, n) {
         }
 
         var alert = alert_template({error:error});
-        $('#tweetsearch form').after(alert);
-        $('#tweetsearch .results').hide();
+        $('#sparsehits form').after(alert);
+        $('#sparsehits .results').hide();
       },
       dataType: 'json',
   });

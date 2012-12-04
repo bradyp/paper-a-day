@@ -7,6 +7,7 @@ import time
 import bottle
 import hits.sparsehits as hits
 import couchdb
+import operator
 
 _hits_obj = None
 
@@ -14,26 +15,28 @@ _hits_obj = None
 def search(name='World'):
     global _searcher
     query = "pepew"
-    query = bottle.request.query.q
+    query = bottle.request.query.query
     print query
     count = -1
-    count = bottle.request.query.n
+    if bottle.request.query.count != '':
+        count = int(bottle.request.query.count)
     print count
     start_time = time.time()
     
     #FIXME run lda on the new query
 
-    tokens = tokenize([query])
-    id_sets = [hits_obj.index[token] for token in tokens]
+    tokens = hits.tokenize([query])
+    id_sets = [_hits_obj.index[token] for token in tokens]
 
     #FIXME change id_sets to be all docs that match the topic
 
     if not id_sets or not all(id_sets):
       print "No matches found"
-      return
+      end_time = time.time()
+      return dict(tweets = [], count = 0, time = end_time - start_time)
     ids = reduce(operator.__and__,id_sets)
 
-    matching_docs = [hits_obj.docs[id] for id in ids] #this is the root set
+    matching_docs = [_hits_obj.docs[id] for id in ids] #this is the root set
 
     #create set of only the docs that conform to the query topics or are directly connected to the query topics
     base_set = set()  #set of doc ids
@@ -47,9 +50,11 @@ def search(name='World'):
     all_ids = [x['id'] for x in docs]
     base_set = base_set.intersection(all_ids)
 
-    hits_obj.run_hits(base_set)
-    ranked_docs = [hits_obj.docs[doc] for doc in hits_obj.docs if doc in base_set]
-    ranked_docs = sorted(ranked_docs, key=operator.itemgetter('auth'), reverse=True)[:count]
+    _hits_obj.run_hits(base_set)
+    ranked_docs = [_hits_obj.docs[doc] for doc in _hits_obj.docs if doc in base_set]
+    ranked_docs = sorted(ranked_docs, key=operator.itemgetter('auth'), reverse=True)
+    if count > 0:
+        ranked_docs = ranked_docs[:count]
     #at this point, ranked docs is the subset of docs with 'auth' as a key
     
     
