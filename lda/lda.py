@@ -24,6 +24,7 @@ class MemoryEfficientCorpus(object):
         #also creates an id for each term
         print type(docs)
         self.dictionary = corpora.Dictionary(map(self._tokenize,map(lambda x: x['document'], docs)))
+        self.dictionary.filter_extremes(no_below=5, no_above=0.8)
 
     # Creates a bag of words corpus. :D
     def __iter__(self):
