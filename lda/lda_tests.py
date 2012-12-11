@@ -72,9 +72,12 @@ class TestLDA(unittest.TestCase):
     def test_lda(self):
         corpora = self.lda.create_corpora(create_docs_for_ta(rec_titles_and_abstracts+topics_titles_and_abstracts), self.lda.map_to_abst)
 
+        corpora.dictionary.save_as_text('testsave.lol')
+
         #Our "bag of words" for the entire corpora
         # should have more than 500 words from the 9 docs
         lerm = self.lda.lda_transform(corpora)
+
 
         #The model itself is hard to model; nosetests has been capturing the stdoutput, but it does in fact create topic models.
         #they;re nit the best b/c a small corpus, but it works!
