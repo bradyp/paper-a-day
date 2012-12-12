@@ -150,12 +150,13 @@ if __name__=="__main__":
         topicid = _root_lda_model.pick_topic(_root_lda_model._abst(doc))
         _topic_dict[topicid].append(doc)
 
-    for topicid, docs in _topic_dict.values():
+    for topicid, docs in _topic_dict.items():
         print "topicid, len"
         print (topicid, len(docs))
 
+
     # hits per topic, yo
-    for topicid, docs in _topic_dict.values():
+    for topicid, docs in _topic_dict.items():
         print topicid
         _topic_hits[topicid] = hits.sparseHITS()
         _topic_hits[topicid].index_docs(docs)
