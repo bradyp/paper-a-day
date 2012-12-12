@@ -1,3 +1,4 @@
+# !/usr/bin/env python
 # document: abstractText
 #  references
 # convert abstractText into a stop-word free document.
@@ -37,6 +38,10 @@ class MemoryEfficientCorpus(object):
 
     def __len__(self):
         return self.sizeCheat
+
+    def get_doc2bow(self, doc):
+        return self.dictionary.doc2bow(self._tokenize(doc))
+
 
 # responsible for modelling topics.
 # Code name it milan for a fashion reference
@@ -94,7 +99,7 @@ class TopicModeller(object):
         a text entry and corresponding ID '''
 
         abst_title = [self._title(document), self._abst(document)]
-        abst_title_text = ' '.join(map(str, abst_title))
+        abst_title_text = ' '.join(map(lambda x: x.encode('ascii', 'ignore'), abst_title))
         eyedee = self._eyedee(document)
 
         return {'id':eyedee, 'document':string.strip(abst_title_text)}
@@ -106,9 +111,25 @@ class TopicModeller(object):
         lda = models.ldamodel.LdaModel(corpora, num_topics=topics)
         return lda
 
+    def setup_lda(self, dociter):
+        self.our_corpora = self.create_corpora(dociter, self.map_to_abst)
+        self.lda_model = self.lda_transform(self.our_corpora, topics =5)
+        #create core LDA model.
 
-    def setup(self,corpora):
-        self.lda_model = self.lda_transform(corpora)
+    def check_model(self, item):
+        itembow = self.our_corpora.get_doc2bow(item)
+        return self.lda_model[itembow]
 
+    def pick_topic(self, item):
+        topicprobs = self.check_model(item)
+        maxVal = 0;
+        maxID = 0;
+        for topic in topicprobs:
+            eyedee, val = topic
+            if val > maxVal:
+                maxVal = val
+                maxID = eyedee
+
+        return maxID
 #rec_titles_and_abstracts
 #topics_titles_And_abstracts

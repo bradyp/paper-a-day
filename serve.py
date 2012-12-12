@@ -1,15 +1,23 @@
 #!/usr/bin/env python
-# web server for tweet search
-# You should not need to edit this file.
 
 import time
-
+import lda.lda as lda
 import bottle
 import hits.sparsehits as hits
 import couchdb
 import operator
+from collections import defaultdict
 
+# root hits object, indexes all documents
 _hits_obj = None
+# root LDA model, indexes all documents
+_root_lda_model = None
+
+# topic dictionary; correlates number from the root lda model to some docs
+_topic_dict = defaultdict(list)
+
+# topic hits; correlates number from the root to trained hit model of correspodning document
+_topic_hits = {}
 
 @bottle.route('/search')
 def search(name='World'):
@@ -22,7 +30,7 @@ def search(name='World'):
         count = int(bottle.request.query.count)
     print count
     start_time = time.time()
-    
+
     #FIXME run lda on the new query
 
     tokens = hits.tokenize([query])
@@ -56,9 +64,7 @@ def search(name='World'):
     if count > 0:
         ranked_docs = ranked_docs[:count]
     #at this point, ranked docs is the subset of docs with 'auth' as a key
-    
-    
-    
+
     end_time = time.time()
 
     return dict(
@@ -115,25 +121,47 @@ TEST_DOCS = [
     }
     ]
 
-
 if __name__=="__main__":
-    #FIXME snag the docs from whereever
+    #snag the docs from whereever
+    _root_lda_model = lda.TopicModeller()
+
     server = couchdb.client.Server(url='https://vertex.skizzerz.net:6984/')
     db = server['papers']
     result = db.view('all/all')
     docs = []
+
+    #index docs
     for row in result:
         docs.append(row.value)
+
+    #okay. let's train an LDA model. :3
+    _root_lda_model.setup_lda(iter(docs))
+
+    for doc in docs:
+        # cache the ID's
+        topicid = _root_lda_model.pick_topic(_root_lda_model._abst(doc))
+        _topic_dict[topicid].append(doc)
+
+    for topicid, docs in _topic_dict.values():
+        print "topicid, len"
+        print (topicid, len(docs))
+
+    # hits per topic, yo
+    for topicid, docs in _topic_dict.values():
+        print topicid
+        _topic_hits[topicid] = hits.sparseHITS()
+        _topic_hits[topicid].index_docs(docs)
 
     _hits_obj = hits.sparseHITS()
 
     #index all the docs
     _hits_obj.index_docs(docs)
-    
-    #FIXME run lda on the docs
-
     #NOW READY FOR QUERIES
-      
+
+
+
+
+
     bottle.run(host='localhost',
                port=8080,
                reloader=True)

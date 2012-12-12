@@ -90,10 +90,8 @@ if __name__=="__main__":
     ourlda = lda.TopicModeller()
     corpora = ourlda.create_corpora(create_docs_for_ta(rec_titles_and_abstracts+topics_titles_and_abstracts), ourlda.map_to_abst)
 
-    lda_model = ourlda.lda_transform(corpora)
-    print "tesradf"
-    print lda_model.show_topics()
-    for i in range(0,10):
-        print i
-        print lda_model.print_topic(0)
-
+    ourlda.setup_lda(create_docs_for_ta(rec_titles_and_abstracts+topics_titles_and_abstracts))
+    fs = ourlda.check_model("recomender systems with collaborative filtering topic modelling topics lda model")
+    print fs
+    print type(fs)
+    print ourlda.lda_model.show_topics(5)
