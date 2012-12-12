@@ -123,7 +123,7 @@ class TopicModeller(object):
 
     def setup_lda(self, dociter):
         self.our_corpora = self.create_corpora(dociter, self.map_to_abst)
-        self.lda_model = self.lda_transform(self.our_corpora, topics =5)
+        self.lda_model = self.lda_transform(self.our_corpora, topics =10)
         #create core LDA model.
 
     def check_model(self, item):
