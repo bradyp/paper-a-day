@@ -1,0 +1,96 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+	<title>Paper-A-Day: A automatic reading list generator</title>
+	<meta name="description" content="">
+	<meta name="author" content="">
+
+	<meta name="viewport" content="width=device-width">
+
+	<link rel="stylesheet/less" href="/static/less/style.less">
+	<script src="/static/js/libs/less-1.3.0.min.js"></script>
+
+	<!-- Use SimpLESS (Win/Linux/Mac) or LESS.app (Mac) to compile your .less files
+	to style.css, and replace the 2 lines above by this one:
+
+	<link rel="stylesheet" href="less/style.css">
+	 -->
+
+	<script src="/static/js/libs/modernizr-2.5.3.min.js"></script>
+</head>
+<body>
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="brand" href="#" style="font-size: larger"><strong>Paper-A-Day</strong></a>
+          <p style="font-size: smaller"><i>"A paper a day keeps your advisor at bay!"</i></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+      <div class="row">
+        <div id="sparsehits" class="span12">
+          <h2>Generate Reading List:</h2>
+          <form class="well well-small form-horizontal">
+		    <div class="control-group">
+			  <label for="query" class="control-label">Query</label>
+			  <div class="controls">
+                <input name="query" type="text" class="input-xlarge" placeholder="Search">
+		      </div>
+			</div>
+			<div class="control-group">
+              <label for="count" class="control-label">Papers</label>
+			  <div class="controls">
+                <input name="count" type="number" placeholder="0">
+			  </div>
+			</div>
+			<div class="control-group">
+			  <div class="controls">
+                <button type="submit" class="btn btn-primary btn-large">Do it!</button>
+		      </div>
+			</div>
+          </form>
+          <div class="results well hide">
+          </div>
+        </div>
+      </div>
+
+    </div> <!-- /container -->
+
+<script id="alert_template" type="text/template">
+  <div class="alert">
+    <button class="close" data-dismiss="alert">×</button>
+    <strong>Error!</strong><p><%- error %></p>
+  </div>
+</script>
+
+<script id="tweet_template" type="text/template">
+  <div class="tweet">
+    <p class="body">
+      <p style="font-size:larger;"><strong><a href="http://dl.acm.org/citation.cfm?id=<%- t.id %>" class="orig_tweet"><%- t.title %></a></strong></p> </br>
+      &ldquo;<%- t.abstract %>&rdquo;
+    </p>
+  </div>
+</script>
+
+<script id="result_template" type="text/template">
+  <p class="result_message">
+    Found <%- count %> docs in <%- time.toFixed(3) %> seconds.
+  </p>
+</script>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+<script>window.jQuery || document.write('<script src="/static/js/libs/jquery-1.7.2.min.js"><\/script>')</script>
+
+<script src="/static/js/libs/bootstrap/bootstrap.min.js"></script>
+<script src="/static/js/libs/underscore-min.js"></script>
+
+<script src="/static/js/plugins.js"></script>
+<script src="/static/js/script.js"></script>
+</body>
+</html>

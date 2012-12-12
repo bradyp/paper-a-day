@@ -41,7 +41,7 @@ def search(name='World'):
 
     #change id_sets to be all docs that match the topic
 
-    id_sets.append(topic_id_sets)
+    id_sets = id_sets + topic_id_sets
 
     if not id_sets or not all(id_sets):
       print "No matches found"
