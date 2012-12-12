@@ -72,20 +72,26 @@ class TestLDA(unittest.TestCase):
     def test_lda(self):
         corpora = self.lda.create_corpora(create_docs_for_ta(rec_titles_and_abstracts+topics_titles_and_abstracts), self.lda.map_to_abst)
 
+        self.assertEqual(len(corpora),9)
+        corpora.dictionary.save_as_text('testsave.lol')
+
         #Our "bag of words" for the entire corpora
         # should have more than 500 words from the 9 docs
-        lerm = self.lda.lda_transform(corpora)
+        lda_trained, lerm = self.lda.lda_transform(corpora)
 
+        herp = self.lda.hdp_transform(corpora)
         #The model itself is hard to model; nosetests has been capturing the stdoutput, but it does in fact create topic models.
         #they;re nit the best b/c a small corpus, but it works!
 
 #and this makes sure we get an expected number of keys in the vocabulary, even given stopwords.
         self.assertTrue(corpora.dictionary.keys()> 500)
 
+if __name__=="__main__":
+    ourlda = lda.TopicModeller()
+    corpora = ourlda.create_corpora(create_docs_for_ta(rec_titles_and_abstracts+topics_titles_and_abstracts), ourlda.map_to_abst)
 
-
-
-
-
-
-
+    ourlda.setup_lda(create_docs_for_ta(rec_titles_and_abstracts+topics_titles_and_abstracts))
+    fs = ourlda.check_model("recomender systems with collaborative filtering topic modelling topics lda model")
+    print fs
+    print type(fs)
+    print ourlda.lda_model.show_topics(5)

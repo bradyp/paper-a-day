@@ -36,12 +36,24 @@
       <div class="row">
         <div id="sparsehits" class="span12">
           <h2>Generate Reading List:</h2>
-          <form class="well form-inline">
-            <label for="query">Query: </label>
-            <input name="query" type="text" class="input-xlarge" placeholder="search"><br />
-            <label for="count">Papers: </label>
-            <input name="count" type="number" placeholder="0"><br />
-            <button type="submit" class="btn">Do it!</button>
+          <form class="well well-small form-horizontal">
+		    <div class="control-group">
+			  <label for="query" class="control-label">Query</label>
+			  <div class="controls">
+                <input name="query" type="text" class="input-xlarge" placeholder="Search">
+		      </div>
+			</div>
+			<div class="control-group">
+              <label for="count" class="control-label">Papers</label>
+			  <div class="controls">
+                <input name="count" type="number" placeholder="0">
+			  </div>
+			</div>
+			<div class="control-group">
+			  <div class="controls">
+                <button type="submit" class="btn btn-primary btn-large">Do it!</button>
+		      </div>
+			</div>
           </form>
           <div class="results well hide">
           </div>
@@ -59,11 +71,16 @@
 
 <script id="tweet_template" type="text/template">
   <div class="tweet">
-    <p class="body">
-      <a href="http://dl.acm.org/citation.cfm?id=<%- t.id %>" class="orig_tweet"><%- t.title %></a> </br>
-      <%- t %>
-      <%- t.abstract %>
-    </p>
+    <div style="width: 100px; float: left;">
+      <%- t.auth %>
+    </div>
+    <div style="float: left;">  
+      <p class="body">
+        <p style="font-size:larger;"><strong><a href="http://dl.acm.org/citation.cfm?id=<%- t.id %>" class="orig_tweet"><%- t.title %></a></strong></p> </br>
+        &ldquo;<%- t.abstract %>&rdquo;
+      </p>
+    </div>
+    <div style="clear: both;"></div>
   </div>
 </script>
 

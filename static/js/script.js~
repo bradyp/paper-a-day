@@ -8,15 +8,23 @@ var alert_template = _.template($('#alert_template').html());
 
 $('#tweetsearch form').submit(function(ev) {
     var q = $(this).find('input[name=query]').val();
-    var n = $(this).find('input[name=count]').val();
-    ajax_search(q, n);
+    var papernum = $(this).find('input[name=papernum]').val();
+    
+    var intRegex = /^\d+$/;
+    if !intRegex.test(papernum))
+    {
+      error = textStatus;
+      return false;
+    }
+    
+    ajax_search(q, papernum);
     return false;
 });
 
 
-function ajax_search(q, n) {
+function ajax_search(q, papernum) {
   $.ajax('/search',{
-      data:{q:q},
+      data:{papernum:papernum,q:q},
       timeout:15000,
       success: function(data) {
         var result_div = $('#tweetsearch .results');

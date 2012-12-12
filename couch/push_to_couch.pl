@@ -21,9 +21,79 @@ my $host = "vertex.skizzerz.net";
 my $port = 6984;
 my $db = "papers";
 my $options = {"ssl" => 1, "update_existing" => 1}; #add username and password keys for updating
+#$options->{"username"} = "<username>";
+#$options->{"password"} = "<password>";
 #$ARGV[0] is the filename of the .json file
 #add_docs($ARGV[0], $host, $port, $db, $options);
-update_citations_references($host, $port, $db, $options);
+update_title($host, $port, $db, $options);
+#update_citations_references($host, $port, $db, $options);
+
+sub update_title {
+	my($server, $port, $db, $options) = @_;
+	my $json = JSON->new;
+	my $ua = LWP::UserAgent->new;
+	$ua->cookie_jar({});
+	if(exists $options->{"ssl"} && $options->{"ssl"} && exists $options->{"ssl_verify_hostname"}
+		&& $options->{"ssl_verify_hostname"} == 0)
+	{
+		$ua->ssl_opts("verify_hostname" => 0);
+	}
+	my $prot = (exists $options->{"ssl"} && $options->{"ssl"}) ? "https://" : "http://";
+	my $path = (exists $options->{"path"} && $options->{"path"}) ? $options->{"path"} : "/";
+	my $baseurl = $prot . $server . ":" . $port . $path;
+	if(exists $options->{"username"} && $options->{"username"}
+		&& exists $options->{"password"} && $options->{"password"})
+	{
+		# we need to modify baseurl to include name/password
+		$baseurl = $prot . $options->{"username"} . ":" . $options->{"password"} . "@"
+			. $server . ":" . $port . $path;
+	}
+	# grab the list of all documents in the db
+	my $request = HTTP::Request->new("GET", $baseurl . $db . "/_design/missingdata/_view/title");
+	my $response = $ua->request($request);
+	if($response->code != 200) {
+		print "Got error " . $response->status_line . ": " . $response->content . "\n";
+		return;
+	}
+	my $missingdata = $json->decode($response->content);
+	foreach my $row (@{$missingdata->{"rows"}}) {
+		my $update = 0;
+		$request = HTTP::Request->new("GET", $baseurl . $db . "/" . $row->{"value"}->{"genfrom"});
+		$response = $ua->request($request);
+		if($response->code != 200) {
+			print "Got error " . $response->status_line . ": " . $response->content . "\n";
+			next;
+		}
+		my $jsondoc = $json->decode($response->content);
+		# we need to iterate through the doc this doc was generated from to find the id match and
+		# update our title -- ick
+		my $title;
+		foreach my $reference (@{$jsondoc->{"docmetadata"}->{"references"}}) {
+			if(exists $reference->{"acm_portal"}->{"title"}) {
+				$title = $reference->{"acm_portal"}->{"title"};
+				$title =~ s/, pp\. [0-9]+(?:-[0-9]+)?\.?$//;
+				my $uniqid = "uniqid:" . md5_hex($title);
+				if($uniqid eq $row->{"key"}) {
+					$row->{"value"}->{"title"} = $title;
+					$update = 1;
+					last;
+				}
+			}
+		}
+		if($update) {
+			$request = HTTP::Request->new("PUT", $baseurl . $db . "/" . $row->{"key"});
+			$request->content(encode("utf8", $json->encode($row->{"value"})));
+			$response = $ua->request($request);
+			if($response->code != 201) {
+				print "Got error " . $response->status_line . ": " . $response->content . "\n";
+			} else {
+				print "Updated " . $row->{"key"} . " with title " . $title . ".\n";
+			}
+		} else {
+			print "Skipping " . $row->{"key"} . " (this shouldn't happen...)\n";
+		}
+	}
+}
 
 sub update_citations_references {
 	my($server, $port, $db, $options) = @_;
@@ -88,7 +158,7 @@ sub update_citations_references {
 					my $title = $reference->{"acm_portal"}->{"title"};
 					$title =~ s/, pp\. [0-9]+(?:-[0-9]+)?\.?$//;
 					my $uniqid = "uniqid:" . md5_hex($title); #Unlikely to result in collision, so should be unique
-					my $newdoc = {source => "acm", _id => $uniqid, citations => [$row->{"key"}], references => [], genfrom => $row->{"key"}};
+					my $newdoc = {source => "acm", _id => $uniqid, title => $title, citations => [$row->{"key"}], references => [], genfrom => $row->{"key"}};
 					$request = HTTP::Request->new("PUT", $baseurl . $db . "/" . $uniqid);
 					$request->content(encode("utf8", $json->encode($newdoc)));
 					$response = $ua->request($request);

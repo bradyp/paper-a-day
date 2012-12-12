@@ -1,3 +1,4 @@
+# !/usr/bin/env python
 # document: abstractText
 #  references
 # convert abstractText into a stop-word free document.
@@ -10,25 +11,37 @@ from stemming.porter2 import stem
 
 class MemoryEfficientCorpus(object):
     #todo: modify this to process better if needed
+
     def _tokenize(self, entry):
         intermed = map(stem,entry.lower().split())
         #TODO: more vibrant stopwords here plz
         stopwords = ['of', 'in', 'and', 'for', 'the', 'to', 'by', 'or','but','therefore','with','on','we','one','method','based','is','are','were','found','which','a','that', 'algorithm', 'this', 'these', 'those','use', 'data']
         stopwords = map(stem, stopwords)
         stopwords.append('a')
+        self.sizeCheat = self.sizeCheat + 1
         return [val for val in intermed if val not in stopwords]
 
     def __init__(self, docs):
         self.ourDocs = docs
+        self.sizeCheat = 0
         #Hold onto a list of words, their frequencies
         #also creates an id for each term
         print type(docs)
         self.dictionary = corpora.Dictionary(map(self._tokenize,map(lambda x: x['document'], docs)))
 
+        self.dictionary.filter_extremes(no_below=5, no_above=0.8)
+
     # Creates a bag of words corpus. :D
     def __iter__(self):
         for doc in self.ourDocs:
             yield self.dictionary.doc2bow(self._tokenize(doc['document']))
+
+    def __len__(self):
+        return self.sizeCheat
+
+    def get_doc2bow(self, doc):
+        return self.dictionary.doc2bow(self._tokenize(doc))
+
 
 # responsible for modelling topics.
 # Code name it milan for a fashion reference
@@ -86,7 +99,7 @@ class TopicModeller(object):
         a text entry and corresponding ID '''
 
         abst_title = [self._title(document), self._abst(document)]
-        abst_title_text = ' '.join(map(str, abst_title))
+        abst_title_text = ' '.join(map(lambda x: x.encode('ascii', 'ignore'), abst_title))
         eyedee = self._eyedee(document)
 
         return {'id':eyedee, 'document':string.strip(abst_title_text)}
@@ -94,10 +107,29 @@ class TopicModeller(object):
     def create_corpora(self, documents, mapping):
         return MemoryEfficientCorpus(map(mapping, documents))
 
-    def lda_transform(self, corpora):
-        lda = models.ldamodel.LdaModel(corpora,id2word=corpora.dictionary,  num_topics=4)
-        lda.show_topics(topics=4, topn=10)
-        corpus_lda = lda[corpora]
-        return corpus_lda
+    def lda_transform(self, corpora, topics=10):
+        lda = models.ldamodel.LdaModel(corpora, num_topics=topics)
+        return lda
+
+    def setup_lda(self, dociter):
+        self.our_corpora = self.create_corpora(dociter, self.map_to_abst)
+        self.lda_model = self.lda_transform(self.our_corpora, topics =5)
+        #create core LDA model.
+
+    def check_model(self, item):
+        itembow = self.our_corpora.get_doc2bow(item)
+        return self.lda_model[itembow]
+
+    def pick_topic(self, item):
+        topicprobs = self.check_model(item)
+        maxVal = 0;
+        maxID = 0;
+        for topic in topicprobs:
+            eyedee, val = topic
+            if val > maxVal:
+                maxVal = val
+                maxID = eyedee
+
+        return maxID
 #rec_titles_and_abstracts
 #topics_titles_And_abstracts
