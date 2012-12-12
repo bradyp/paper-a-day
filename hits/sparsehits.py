@@ -6,7 +6,6 @@ import operator
 import gensim
 import re
 import couchdb
-#import Couch
 
 import numpy as np
 from scipy import sparse
@@ -37,26 +36,19 @@ class sparseHITS(object):
       
     def _adjacencies(self):
         adjacencies = collections.defaultdict(set)
-        for doc in self.seeds:
+        for doc in self.docs:
+          if any(doc == seed for seed in self.seeds):  #can't check a non-existent doc
             for refid in self.docs[doc]['references']:  #"who does this reference?"
-                if refid not in self.docs:
-                  continue
                 to = refid
                 frm = doc
-                # avoid self-references (of same paper)
-                if frm!=to:
-                    adjacencies[frm].add(to)
+                adjacencies[frm].add(to)
                 # make sure that everyone who is mentioned is in the dict
                 adjacencies[to]
             for citid in self.docs[doc]['citations']:   #"who cites this?"
-                if citid not in self.docs:
-                  continue
                 to = doc
                 frm = citid
-                # avoid self-citations (of same paper)
-                if frm!=to:
-                    adjacencies[frm].add(to)
                 # make sure that everyone who is mentioned is in the dict
+                adjacencies[frm].add(to)
                 adjacencies[to]
         return adjacencies
     
@@ -79,29 +71,32 @@ class sparseHITS(object):
     def run_hits(self, base):
     
         self.seeds = base
-        if not self.setup_hits():
-          #if all scores are 0, add that to the doc
-          for doc in self.seeds:
+        #set default scores for all docs
+        for doc in self.seeds:
             self.docs[doc]['auth'] = 0
+        if not self.setup_hits():
           return
         
         while(not self._has_converged()):
             self._hits_iteration()
         
+       
         #store the authority values into the docs themselves
         sparse_indices = self.auth_vect.nonzero()[0]
         
         for uid in self.uid_index:
-          if self.uid_index[uid] in sparse_indices:
-            self.docs[uid]['auth'] = self.auth_vect[self.uid_index[uid]].todense()
-          else:
-            self.docs[uid]['auth'] = 0
+          if uid in self.docs:
+           if self.uid_index[uid] in sparse_indices:
+             self.docs[uid]['auth'] = self.auth_vect[self.uid_index[uid]].todense()[0,0]
+           else:
+             self.docs[uid]['auth'] = 0
         
     def setup_hits(self):
         adjacencies = self._adjacencies()
         if adjacencies == {}:
           return False
         uids = adjacencies.keys()
+
         self.uid_index = {uid:i for i,uid in enumerate(uids)}
     
         self.citeref_mat = self._matrix(adjacencies, self.uid_index)
@@ -110,6 +105,7 @@ class sparseHITS(object):
         adj_size = len(self._adjacencies())
         self.hub_vect = sparse.csc_matrix(np.ones(adj_size)).transpose()
         self.auth_vect = sparse.csc_matrix(np.ones(adj_size)).transpose()
+        return True
         
     def _hits_iteration(self):
         old_auth = self.auth_vect.copy()
@@ -134,10 +130,20 @@ class sparseHITS(object):
 
     def index_docs(self, docs):
         for doc in docs:
+          if 'id' not in doc:
+            continue    #not dealing with those docs
           id = doc['id']
           self.docs[id] = doc
+          
           # we make a set of the tokens to remove duplicates
-          tokens = set(tokenize(doc['keywords']))
+          wordlist = [word for word in doc['keywords'] if word != None]
+          if doc['abstract'] != "An abstract is not available.":  #sad, but frequent
+            wordlist.append(doc['abstract'])
+          wordlist.append(doc['title'])  #everything has a title
+          wordlist = wordlist + [word for word in doc['classification'] if word != None]
+          
+          tokens = set(tokenize([word for word in wordlist]))
+          
           for token in tokens:
             self.index[token].add(id)
 
@@ -157,9 +163,8 @@ def get_docs(useDefault = True):    ##pulling from test corpus for now
         return docs
 
 def main():
-    #FIXME snag the docs from whereever
+    #snag the docs from wherever
     docs = get_docs()
-    print len(docs)
 
     hits_obj = sparseHITS()
 
@@ -168,7 +173,7 @@ def main():
     
     #FIXME run lda on the docs
 
-    #FIXME NOW READY FOR QUERIES
+    #NOW READY FOR QUERIES
 
 
     #read queries
@@ -200,10 +205,10 @@ def main():
     all_ids = [x['id'] for x in docs]
     base_set = base_set.intersection(all_ids)
 
+
     hits_obj.run_hits(base_set)
     ranked_docs = [hits_obj.docs[doc] for doc in hits_obj.docs if doc in base_set]
     ranked_docs = sorted(ranked_docs, key=operator.itemgetter('auth'), reverse=True)
-    print ranked_docs
       
     print "Matching docs: "
     for doc in ranked_docs:
