@@ -52,20 +52,28 @@ class TopicModeller(object):
     # these are some cutesy methods to abstract away
     # the dictionary references for when I need to change them
     # :D
+
+
+    def _getVal(self, val, doc):
+        try:
+            return doc[val]
+        except KeyError:
+            return '0'
+
     def _citations(self, doc):
-        return doc['citations']
+        return self._getVal('citations', doc)
 
     def _references(self, doc):
-        return doc['references']
+        return self._getVal('references', doc)
 
     def _title(self, doc):
-        return doc['title']
+        return self._getVal('title', doc)
 
     def _abst(self, doc):
-        return doc['abstract']
+        return self._getVal('abstract', doc)
 
     def _eyedee(self, doc):
-        return doc['id']
+        return self._getVal('id', doc)
 
     #yeah, these are really domain/our implementation specific
     #aspects of the implementation
@@ -100,7 +108,9 @@ class TopicModeller(object):
 
         abst_title = [self._title(document), self._abst(document)]
         abst_title_text = ' '.join(map(lambda x: x.encode('ascii', 'ignore'), abst_title))
+        print document.keys()
         eyedee = self._eyedee(document)
+
 
         return {'id':eyedee, 'document':string.strip(abst_title_text)}
 
@@ -113,7 +123,7 @@ class TopicModeller(object):
 
     def setup_lda(self, dociter):
         self.our_corpora = self.create_corpora(dociter, self.map_to_abst)
-        self.lda_model = self.lda_transform(self.our_corpora, topics =5)
+        self.lda_model = self.lda_transform(self.our_corpora, topics =10)
         #create core LDA model.
 
     def check_model(self, item):

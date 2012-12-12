@@ -31,12 +31,17 @@ def search(name='World'):
         count = int(bottle.request.query.count)
     start_time = time.time()
 
-    #FIXME run lda on the new query
+    #run lda on the new quer
+    query_topic = _root_lda_model.pick_topic(query)
+
+    topic_id_sets = [_topic_hits[query_topic].index[token] for token in hits.tokenize([query])]
 
     tokens = hits.tokenize([query])
     id_sets = [_hits_obj.index[token] for token in tokens]
 
-    #FIXME change id_sets to be all docs that match the topic
+    #change id_sets to be all docs that match the topic
+
+    id_sets.append(topic_id_sets)
 
     if not id_sets or not all(id_sets):
       print "No matches found"
@@ -57,17 +62,17 @@ def search(name='World'):
     #remove the referenced/citing docs that aren't actually in our collection
     all_ids = [x['id'] for x in docs if 'id' in x]
     base_set = base_set.intersection(all_ids)
-    
+
     _hits_obj.run_hits(base_set)
     ranked_docs = [_hits_obj.docs[doc] for doc in _hits_obj.docs if doc in base_set]
     ranked_docs = sorted(ranked_docs, key=operator.itemgetter('auth'), reverse=True)
     if count > 0:
         ranked_docs = ranked_docs[:count]
     #at this point, ranked docs is the subset of docs with 'auth' as a key
-    
+
     for doc in ranked_docs:
         print doc['auth']
-    
+
     end_time = time.time()
 
     return dict(
@@ -155,13 +160,13 @@ if __name__=="__main__":
         _topic_hits[topicid] = hits.sparseHITS()
         _topic_hits[topicid].index_docs(docs)
 
+
+    print 'HITS!'
     _hits_obj = hits.sparseHITS()
 
     #index all the docs
     _hits_obj.index_docs(docs)
     #NOW READY FOR QUERIES
-
-
 
     bottle.run(host='localhost',
                port=8080,
