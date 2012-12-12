@@ -71,16 +71,10 @@
 
 <script id="tweet_template" type="text/template">
   <div class="tweet">
-    <div style="width: 100px; float: left;">
-      <%- t.auth %>
-    </div>
-    <div style="float: left;">  
-      <p class="body">
-        <p style="font-size:larger;"><strong><a href="http://dl.acm.org/citation.cfm?id=<%- t.id %>" class="orig_tweet"><%- t.title %></a></strong></p> </br>
-        &ldquo;<%- t.abstract %>&rdquo;
-      </p>
-    </div>
-    <div style="clear: both;"></div>
+    <p class="body">
+      <a href="http://dl.acm.org/citation.cfm?id=<%- t.id %>" class="orig_tweet"><%- t.title %></a> </br>
+      <%- t.abstract %>
+    </p>
   </div>
 </script>
 
