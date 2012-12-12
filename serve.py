@@ -143,7 +143,7 @@ if __name__=="__main__":
         docs.append(row.value)
 
     #okay. let's train an LDA model. :3
-    _root_lda_model.setup_lda(iter(docs))
+    _root_lda_model.setup_lda(iter([x for x in docs if 'id' in x]))
 
     for doc in docs:
         # cache the ID's
