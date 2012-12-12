@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-# web server for tweet search
-# You should not need to edit this file.
+# web server for ACM digital library search
+# You should not need to edit this file. Hopefully.
 
 import time
 
@@ -14,13 +14,11 @@ _hits_obj = None
 @bottle.route('/search')
 def search(name='World'):
     global _searcher
-    query = "pepew"
+    query = "default"
     query = bottle.request.query.query
-    print query
     count = -1
     if bottle.request.query.count != '':
         count = int(bottle.request.query.count)
-    print count
     start_time = time.time()
     
     #FIXME run lda on the new query
@@ -47,9 +45,9 @@ def search(name='World'):
       base_set = base_set.union(set(doc['references']))  #add the references to base_set
 
     #remove the referenced/citing docs that aren't actually in our collection
-    all_ids = [x['id'] for x in docs]
+    all_ids = [x['id'] for x in docs if 'id' in x]
     base_set = base_set.intersection(all_ids)
-
+    
     _hits_obj.run_hits(base_set)
     ranked_docs = [_hits_obj.docs[doc] for doc in _hits_obj.docs if doc in base_set]
     ranked_docs = sorted(ranked_docs, key=operator.itemgetter('auth'), reverse=True)
@@ -57,6 +55,8 @@ def search(name='World'):
         ranked_docs = ranked_docs[:count]
     #at this point, ranked docs is the subset of docs with 'auth' as a key
     
+    for doc in ranked_docs:
+        print doc['auth']
     
     
     end_time = time.time()
@@ -117,7 +117,7 @@ TEST_DOCS = [
 
 
 if __name__=="__main__":
-    #FIXME snag the docs from whereever
+    #snag the docs from the server
     server = couchdb.client.Server(url='https://vertex.skizzerz.net:6984/')
     db = server['papers']
     result = db.view('all/all')
